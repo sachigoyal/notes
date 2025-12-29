@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, index, uuid } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -74,7 +74,8 @@ export const verification = pgTable(
 );
 
 export const notes = pgTable("notes", {
-  id: text("id").primaryKey(),
+  id: text("id").primaryKey(),  // NOTE: id is a uuid
+  folderId: text("folder_id").notNull().references(() => folders.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   content: text("content"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -86,6 +87,22 @@ export const notes = pgTable("notes", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
 })
+
+export const folders = pgTable(
+  "folders",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),              // FK -> users.id (migration)
+    parentFolderId: text("parent_folder_id"),       // FK -> folders.id (migration), NULL = root folder
+    name: text("name").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => /* @__PURE__ */ new Date()).notNull(),
+  },
+  (t) => ({
+    userIdx: index("folders_user_idx").on(t.userId),
+    parentIdx: index("folders_parent_idx").on(t.parentFolderId),
+  })
+);
 
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
@@ -104,4 +121,14 @@ export const accountRelations = relations(account, ({ one }) => ({
     fields: [account.userId],
     references: [user.id],
   }),
+}));
+
+export const foldersRelations = relations(folders, ({ one, many }) => ({
+  parent: one(folders, { fields: [folders.parentFolderId], references: [folders.id] }),
+  children: many(folders),
+  notes: many(notes),
+}));
+
+export const notesRelations = relations(notes, ({ one }) => ({
+  folder: one(folders, { fields: [notes.folderId], references: [folders.id] }),
 }));
