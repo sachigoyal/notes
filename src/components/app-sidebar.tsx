@@ -16,7 +16,7 @@ import { Button } from "./ui/button";
 
 export default function AppSidebar() {
   return (
-    <Sidebar className="">
+    <Sidebar collapsible="offcanvas" position="static">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>

@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { GithubIcon, GoogleIcon } from "@/lib/icon";
 import Link from "next/link";
 import { signIn } from "@/lib/auth-client";
@@ -26,61 +25,63 @@ export default function AuthForm({ mode }: AuthFormProps) {
 	};
 
 	return (
-		<>
-			<div className="text-center mb-5">
-				<h2 className="text-3xl font-bold mb-1">
-					{isLogin ? "Login to your account" : "Create an account"}
-				</h2>
-				<p className="text-sm text-muted-foreground">
-					{isLogin ? "Login to your account to continue" : "Sign up to your account to continue"}
+		<div className="space-y-8">
+			{/* Header */}
+			<div className="space-y-2">
+				<h1 className="text-2xl font-normal tracking-tight">
+					{isLogin ? "Welcome back" : "Get started"}
+				</h1>
+				<p className="text-muted-foreground text-sm font-light">
+					{isLogin 
+						? "Sign in to continue to your notes" 
+						: "Create an account to start writing"
+					}
 				</p>
 			</div>
 
-			<div className='flex flex-col gap-4 w-sm my-2'>
-				<Button
-					variant="outline"
-					className="flex-1 cursor-pointer h-10 text-md rounded-none"
+			{/* Social buttons */}
+			<div className="space-y-3">
+				<button
 					onClick={() => handleSocialSignUp("google")}
+					className="w-full h-11 flex items-center justify-center gap-3 border border-border rounded-lg bg-transparent hover:bg-muted/50 transition-colors text-sm font-normal cursor-pointer"
 				>
-					<GoogleIcon />
-					Continue with Google
-				</Button>
+					<GoogleIcon className="w-4 h-4" />
+					<span>Continue with Google</span>
+				</button>
 
-				<Button
-					variant="outline"
-					className="flex-1 cursor-pointer h-10 text-md rounded-none"
+				<button
 					onClick={() => handleSocialSignUp("github")}
+					className="w-full h-11 flex items-center justify-center gap-3 border border-border rounded-lg bg-transparent hover:bg-muted/50 transition-colors text-sm font-normal cursor-pointer"
 				>
-					<GithubIcon />
-					Continue with GitHub
-				</Button>
+					<GithubIcon className="w-4 h-4" />
+					<span>Continue with GitHub</span>
+				</button>
 			</div>
 
-			<div className="mt-4 text-center">
-				<p className="text-sm text-muted-foreground">
-					{isLogin ? (
-						<>
-							Don't have an account?{" "}
-							<Link
-								href="/signup"
-								className="font-medium text-primary hover:underline"
-							>
-								Sign Up
-							</Link>
-						</>
-					) : (
-						<>
-							Already have an account?{" "}
-							<Link
-								href="/login"
-								className="font-medium text-primary hover:underline"
-							>
-								Sign In
-							</Link>
-						</>
-					)}
-				</p>
-			</div>
-		</>
+			{/* Footer */}
+			<p className="text-sm text-muted-foreground font-light">
+				{isLogin ? (
+					<>
+						No account?{" "}
+						<Link
+							href="/signup"
+							className="text-foreground hover:underline underline-offset-4 transition-colors"
+						>
+							Create one
+						</Link>
+					</>
+				) : (
+					<>
+						Have an account?{" "}
+						<Link
+							href="/login"
+							className="text-foreground hover:underline underline-offset-4 transition-colors"
+						>
+							Sign in
+						</Link>
+					</>
+				)}
+			</p>
+		</div>
 	);
 }

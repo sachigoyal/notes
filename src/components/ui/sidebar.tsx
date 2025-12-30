@@ -155,6 +155,7 @@ function Sidebar({
   side = "left",
   variant = "sidebar",
   collapsible = "offcanvas",
+  position = "fixed",
   className,
   children,
   ...props
@@ -162,6 +163,7 @@ function Sidebar({
   side?: "left" | "right"
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
+  position?: "fixed" | "static"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
@@ -202,6 +204,40 @@ function Sidebar({
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
       </Sheet>
+    )
+  }
+
+  // Static position: sidebar flows normally in the document, still collapsible
+  if (position === "static") {
+    return (
+      <div
+        className="group peer text-sidebar-foreground hidden md:flex h-full"
+        data-state={state}
+        data-collapsible={state === "collapsed" ? collapsible : ""}
+        data-variant={variant}
+        data-side={side}
+        data-slot="sidebar"
+      >
+        <div
+          data-slot="sidebar-container"
+          className={cn(
+            "h-full w-(--sidebar-width) transition-[width] duration-200 ease-linear flex",
+            "group-data-[collapsible=offcanvas]:w-0 group-data-[collapsible=offcanvas]:overflow-hidden",
+            "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
+            "border-r border-sidebar-border",
+            className
+          )}
+          {...props}
+        >
+          <div
+            data-sidebar="sidebar"
+            data-slot="sidebar-inner"
+            className="bg-sidebar flex h-full w-(--sidebar-width) flex-col"
+          >
+            {children}
+          </div>
+        </div>
+      </div>
     )
   }
 
