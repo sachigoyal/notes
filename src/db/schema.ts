@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { pgTable, text, timestamp, boolean, index, uuid } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
@@ -74,9 +74,10 @@ export const verification = pgTable(
 );
 
 export const notes = pgTable("notes", {
-  id: text("id").primaryKey(),  // NOTE: id is a uuid
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`),  // NOTE: id is a uuid
   folderId: text("folder_id").notNull().references(() => folders.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
+  slug: text("slug").notNull().unique(),
   content: text("content"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
@@ -91,7 +92,7 @@ export const notes = pgTable("notes", {
 export const folders = pgTable(
   "folders",
   {
-    id: text("id").primaryKey(),
+    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
     userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),              // FK -> users.id (migration)
     parentFolderId: text("parent_folder_id"),       // FK -> folders.id (migration), NULL = root folder
     name: text("name").notNull(),
@@ -132,3 +133,10 @@ export const foldersRelations = relations(folders, ({ one, many }) => ({
 export const notesRelations = relations(notes, ({ one }) => ({
   folder: one(folders, { fields: [notes.folderId], references: [folders.id] }),
 }));
+
+
+// Types
+export type Note = typeof notes.$inferSelect;
+export type NewNote = typeof notes.$inferInsert;
+export type Folder = typeof folders.$inferSelect;
+export type NewFolder = typeof folders.$inferInsert;

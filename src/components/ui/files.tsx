@@ -15,7 +15,7 @@ export type FolderProps = {
 };
 
 export const File: React.FC<FileProps> = ({ name, className }) => (
-  <div className={cn("flex items-center space-x-2 py-1 text-sm hover:bg-muted rounded px-2 -translate-x-2 cursor-pointer", className)}>
+  <div className={cn("flex items-center space-x-2 py-1 text-sm hover:bg-muted rounded px-2 cursor-pointer", className)}>
     <FileIcon className="h-4 w-4 text-muted-foreground" />
     <span>{name}</span>
   </div>
@@ -25,7 +25,7 @@ const FolderTrigger: React.FC<{ name: string; className?: string; hasFiles: bool
   <AccordionPrimitive.Header className="flex">
     {hasFiles ? (
       <AccordionPrimitive.Trigger
-        className={cn("flex flex-1 items-center py-1 text-sm font-medium transition-all hover:no-underline hover:bg-muted rounded px-2 -translate-x-2 group", className)}
+        className={cn("flex flex-1 items-center py-1 text-sm font-medium transition-all hover:no-underline hover:bg-muted rounded px-2 group", className)}
       >
         <div className="relative flex items-center">
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90 mr-1" />
@@ -35,7 +35,7 @@ const FolderTrigger: React.FC<{ name: string; className?: string; hasFiles: bool
         </div>
       </AccordionPrimitive.Trigger>
     ) : (
-      <div className={cn("flex flex-1 items-center py-1 text-sm font-medium hover:bg-muted rounded px-2 -translate-x-2", className)}>
+      <div className={cn("flex flex-1 items-center py-1 text-sm font-medium hover:bg-muted rounded px-2", className)}>
         <FolderIcon className="h-4 w-4 text-muted-foreground mr-2" />
         <span>{name}</span>
       </div>
@@ -47,7 +47,7 @@ const FolderContent: React.FC<{ children?: React.ReactNode; className?: string }
   <AccordionPrimitive.Content
     className={cn("pl-2 overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down", className)}
   >
-    <div className="pl-4 border-l border-border">{children}</div>
+    <div className="pl-4 border-border">{children}</div>
   </AccordionPrimitive.Content>
 );
 
@@ -76,7 +76,7 @@ export const Files: React.FC<FilesProps> = ({ children, defaultValue, className 
   return (
     <AccordionPrimitive.Root 
       type="multiple" 
-      className={cn("w-full min-w-[250px]", className)} 
+      className={cn("w-full", className)} 
       defaultValue={defaultOpenFolders}
     >
       {children}

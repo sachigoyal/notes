@@ -1,10 +1,10 @@
 import { db } from "@/db";
 import { folders, notes } from "@/db/schema";
 import { auth } from "@/lib/auth";
-import { nanoid } from "nanoid";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { slugify } from "@/lib/utils";
 
 export const createnote = async (title: string, content: string, folderId: string) => {
   const session = await auth.api.getSession({
@@ -16,8 +16,8 @@ export const createnote = async (title: string, content: string, folderId: strin
   }
 
   await db.insert(notes).values({
-    id: nanoid(),
     title,
+    slug: slugify(title),
     content,
     userId: session.user.id,
     folderId,
@@ -37,7 +37,6 @@ export const createfolder = async (name: string, parentFolderId: string | null) 
   }
 
   await db.insert(folders).values({
-    id: nanoid(),
     name,
     userId: session.user.id,
       parentFolderId,

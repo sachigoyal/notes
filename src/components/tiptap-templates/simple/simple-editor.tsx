@@ -73,8 +73,6 @@ import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
 
-import content from "@/components/tiptap-templates/simple/data/content.json"
-
 const MainToolbarContent = ({
   onHighlighterClick,
   onLinkClick,
@@ -224,7 +222,7 @@ export function SimpleEditor() {
         onError: (error) => console.error("Upload failed:", error),
       }),
     ],
-    content,
+    content: "",
   })
 
   const rect = useCursorVisibility({
@@ -250,6 +248,7 @@ export function SimpleEditor() {
                 }
               : {}),
           }}
+          className="h-[45px]"
         >
           {mobileView === "main" ? (
             <MainToolbarContent

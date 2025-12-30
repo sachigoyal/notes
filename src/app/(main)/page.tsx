@@ -1,7 +1,9 @@
+import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
+
 export default function Home() {
   return (
-    <div className="w-full p-3">
-      <h1>Home</h1>
+    <div className="w-full">
+      <SimpleEditor />
     </div>
   )
 }
