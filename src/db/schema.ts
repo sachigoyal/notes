@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { pgTable, text, timestamp, boolean, index, uuid } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, index, uuid, pgEnum, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -73,36 +73,39 @@ export const verification = pgTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
-export const notes = pgTable("notes", {
-  id: text("id").primaryKey().default(sql`gen_random_uuid()`),  // NOTE: id is a uuid
-  folderId: text("folder_id").notNull().references(() => folders.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  slug: text("slug").notNull().unique(),
-  content: text("content"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at")
-    .defaultNow()
-    .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-})
+export const nodeType = pgEnum("node_type", ["folder", "note"]);
 
-export const folders = pgTable(
-  "folders",
+export const nodes = pgTable(
+  "nodes",
   {
-    id: text("id").primaryKey().default(sql`gen_random_uuid()`),
-    userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),              // FK -> users.id (migration)
-    parentFolderId: text("parent_folder_id"),       // FK -> folders.id (migration), NULL = root folder
-    name: text("name").notNull(),
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+
+    parentId: uuid("parent_id").references((): any => nodes.id, { onDelete: "cascade" }), // NULL = root
+
+    type: nodeType("type").notNull(),
+
+    // folders
+    name: text("name"),
+
+    // notes
+    title: text("title"),
+    slug: text("slug"),
+    content: text("content"),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => /* @__PURE__ */ new Date()).notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
   },
-  (t) => ({
-    userIdx: index("folders_user_idx").on(t.userId),
-    parentIdx: index("folders_parent_idx").on(t.parentFolderId),
-  })
+  (t) => [
+    index("nodes_user_parent_idx").on(t.userId, t.parentId),
+    uniqueIndex("nodes_user_slug_unique").on(t.userId, t.slug),
+  ]
 );
 
 export const userRelations = relations(user, ({ many }) => ({
@@ -124,19 +127,11 @@ export const accountRelations = relations(account, ({ one }) => ({
   }),
 }));
 
-export const foldersRelations = relations(folders, ({ one, many }) => ({
-  parent: one(folders, { fields: [folders.parentFolderId], references: [folders.id] }),
-  children: many(folders),
-  notes: many(notes),
+export const nodesRelations = relations(nodes, ({ one, many }) => ({
+  parent: one(nodes, { fields: [nodes.parentId], references: [nodes.id] }),
+  children: many(nodes),
 }));
-
-export const notesRelations = relations(notes, ({ one }) => ({
-  folder: one(folders, { fields: [notes.folderId], references: [folders.id] }),
-}));
-
 
 // Types
-export type Note = typeof notes.$inferSelect;
-export type NewNote = typeof notes.$inferInsert;
-export type Folder = typeof folders.$inferSelect;
-export type NewFolder = typeof folders.$inferInsert;
+export type Node = typeof nodes.$inferSelect;
+export type NewNode = typeof nodes.$inferInsert;

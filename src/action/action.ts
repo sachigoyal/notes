@@ -1,12 +1,12 @@
 import { db } from "@/db";
-import { folders, notes } from "@/db/schema";
+import { nodes } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { slugify } from "@/lib/utils";
 
-export const createnote = async (title: string, content: string, folderId: string) => {
+export const createnote = async (title: string, content: string, parentId: string | null) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -15,19 +15,17 @@ export const createnote = async (title: string, content: string, folderId: strin
     redirect("/login");
   }
 
-  await db.insert(notes).values({
+  await db.insert(nodes).values({
+    type: "note",
     title,
     slug: slugify(title),
     content,
     userId: session.user.id,
-    folderId,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    parentId,
   });
 };
 
-
-export const createfolder = async (name: string, parentFolderId: string | null) => {
+export const createfolder = async (name: string, parentId: string | null) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -36,14 +34,13 @@ export const createfolder = async (name: string, parentFolderId: string | null) 
     redirect("/login");
   }
 
-  await db.insert(folders).values({
+  await db.insert(nodes).values({
+    type: "folder",
     name,
     userId: session.user.id,
-      parentFolderId,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    parentId,
   });
-}
+};
 
 export const updatenote = async (
   id: string,
@@ -59,10 +56,10 @@ export const updatenote = async (
   }
 
   await db
-    .update(notes)
+    .update(nodes)
     .set({
       title,
       content,
     })
-    .where(eq(notes.id, id));
+    .where(eq(nodes.id, id));
 };
