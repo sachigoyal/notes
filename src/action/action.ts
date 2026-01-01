@@ -1,3 +1,5 @@
+"use server"
+
 import { db } from "@/db";
 import { nodes } from "@/db/schema";
 import { auth } from "@/lib/auth";
