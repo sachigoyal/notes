@@ -7,4 +7,3 @@ export async function SidebarWrapper() {
 
   return <AppSidebar initialTree={tree} />;
 }
-

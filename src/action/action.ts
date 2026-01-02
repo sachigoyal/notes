@@ -81,7 +81,7 @@ export const updateNoteContent = async (id: string, content: string) => {
     .where(eq(nodes.id, id));
 };
 
-const updateFolder = async (id: string, name: string) => {
+export const updateFolder = async (id: string, name: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });

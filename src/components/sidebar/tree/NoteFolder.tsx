@@ -1,6 +1,6 @@
 "use client";
 
-import { Folder } from "@/components/ui/files";
+import { FolderWithActions } from "@/components/ui/files";
 import type { FolderNode } from "@/lib/file-tree";
 import { useSelection } from "@/lib/selection-context";
 import { Note } from "./Notes";
@@ -10,7 +10,12 @@ export function NoteFolder({ node }: { node: FolderNode }) {
   const isSelected = selection?.type === "folder" && selection.node.id === node.id;
 
   return (
-    <Folder name={node.name} isSelected={isSelected} onSelect={() => selectFolder(node)}>
+    <FolderWithActions 
+      id={node.id}
+      name={node.name} 
+      isSelected={isSelected} 
+      onSelect={() => selectFolder(node)}
+    >
       {node.children.map((child) =>
         child.type === "folder" ? (
           <NoteFolder key={child.id} node={child} />
@@ -18,6 +23,6 @@ export function NoteFolder({ node }: { node: FolderNode }) {
           <Note key={child.id} node={child} />
         )
       )}
-    </Folder>
+    </FolderWithActions>
   );
 }

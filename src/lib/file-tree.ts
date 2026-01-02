@@ -7,6 +7,7 @@ export type FileNode = {
   slug: string | null;
   content: string | null;
   parentId: string | null;
+  createdAt: Date;
 };
 
 export type FolderNode = {
@@ -15,30 +16,18 @@ export type FolderNode = {
   name: string;
   parentId: string | null;
   children: TreeNode[];
+  createdAt: Date;
 };
 
 export type TreeNode = FileNode | FolderNode;
 
-/**
- * Builds a hierarchical file tree structure from flat node data.
- * 
- * @param getData - An async function that fetches flat node data
- * @returns A promise that resolves to an array of root-level TreeNodes
- * 
- * @example
- * const tree = await buildFileTree(async () => {
- *   return await db.select().from(nodes).where(eq(nodes.userId, userId));
- * });
- */
 export async function buildFileTree(
   getData: () => Promise<Node[]>
 ): Promise<TreeNode[]> {
   const flatNodes = await getData();
 
-  // Create a map for quick lookup
   const nodeMap = new Map<string, TreeNode>();
   
-  // First pass: create all nodes
   for (const node of flatNodes) {
     if (node.type === "folder") {
       nodeMap.set(node.id, {
@@ -47,6 +36,7 @@ export async function buildFileTree(
         name: node.name ?? "Untitled Folder",
         parentId: node.parentId,
         children: [],
+        createdAt: node.createdAt,
       });
     } else {
       nodeMap.set(node.id, {
@@ -56,13 +46,11 @@ export async function buildFileTree(
         slug: node.slug,
         content: node.content,
         parentId: node.parentId,
+        createdAt: node.createdAt,
       });
     }
   }
 
-  console.log(nodeMap);
-
-  // Second pass: build the tree structure
   const rootNodes: TreeNode[] = [];
 
   for (const node of nodeMap.values()) {
@@ -81,23 +69,10 @@ export async function buildFileTree(
     }
   }
 
-  console.log(rootNodes);
-
-  // Sort nodes: folders first, then files, alphabetically within each group
+  // Sort nodes by createdAt timestamp (newest first)
   const sortNodes = (nodes: TreeNode[]): TreeNode[] => {
-    return nodes.sort((a, b) => {
-      // Folders come before files
-      if (a.type === "folder" && b.type !== "folder") return -1;
-      if (a.type !== "folder" && b.type === "folder") return 1;
-
-      // Alphabetical sort within same type
-      const aName = a.type === "folder" ? a.name : a.title;
-      const bName = b.type === "folder" ? b.name : b.title;
-      return aName.localeCompare(bName);
-    });
+    return nodes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   };
-
-  console.log(sortNodes(rootNodes));
 
   // Recursively sort all children
   const sortTree = (nodes: TreeNode[]): TreeNode[] => {
@@ -110,21 +85,13 @@ export async function buildFileTree(
     return sorted;
   };
 
-  console.log(sortTree(rootNodes));
-
   return sortTree(rootNodes);
 }
 
-/**
- * Type guard to check if a TreeNode is a FolderNode
- */
 export function isFolder(node: TreeNode): node is FolderNode {
   return node.type === "folder";
 }
 
-/**
- * Type guard to check if a TreeNode is a FileNode
- */
 export function isFile(node: TreeNode): node is FileNode {
   return node.type === "note";
 }
