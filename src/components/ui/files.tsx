@@ -6,16 +6,27 @@ import { cn } from "@/lib/utils";
 export type FileProps = {
   name: string;
   className?: string;
+  isSelected?: boolean;
+  onClick?: () => void;
 };
 
 export type FolderProps = {
   name: string;
   children: React.ReactNode;
   className?: string;
+  isSelected?: boolean;
+  onSelect?: () => void;
 };
 
-export const File: React.FC<FileProps> = ({ name, className }) => (
-  <div className={cn("flex items-center space-x-2 py-1 text-sm hover:bg-muted rounded px-2 cursor-pointer", className)}>
+export const File: React.FC<FileProps> = ({ name, className, isSelected, onClick }) => (
+  <div
+    className={cn(
+      "flex items-center space-x-2 py-1 text-sm hover:bg-muted rounded px-2 cursor-pointer",
+      isSelected && "bg-muted",
+      className
+    )}
+    onClick={onClick}
+  >
     <FileIcon className="h-4 w-4 text-muted-foreground" />
     <span>{name}</span>
   </div>
@@ -115,10 +126,25 @@ export const NewFolderInput: React.FC<NewFolderInputProps> = ({ onSubmit, onCanc
   );
 };
 
-const FolderTriggerExpandable: React.FC<{ name: string; className?: string }> = ({ name, className }) => (
+const FolderTriggerExpandable: React.FC<{
+  name: string;
+  className?: string;
+  isSelected?: boolean;
+  onSelect?: () => void;
+}> = ({ name, className, isSelected, onSelect }) => (
   <AccordionPrimitive.Header className="flex">
     <AccordionPrimitive.Trigger
-      className={cn("flex flex-1 items-center py-1 text-sm font-medium transition-all hover:no-underline hover:bg-muted rounded px-2 group", className)}
+      className={cn(
+        "flex flex-1 items-center py-1 text-sm font-medium transition-all hover:no-underline hover:bg-muted rounded px-2 group",
+        isSelected && "bg-muted",
+        className
+      )}
+      onClick={(e) => {
+        if (onSelect) {
+          e.stopPropagation();
+          onSelect();
+        }
+      }}
     >
       <div className="relative flex items-center">
         <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-90 mr-1" />
@@ -130,8 +156,20 @@ const FolderTriggerExpandable: React.FC<{ name: string; className?: string }> = 
   </AccordionPrimitive.Header>
 );
 
-const FolderTriggerEmpty: React.FC<{ name: string; className?: string }> = ({ name, className }) => (
-  <div className={cn("flex flex-1 items-center py-1 text-sm font-medium hover:bg-muted rounded px-2", className)}>
+const FolderTriggerEmpty: React.FC<{
+  name: string;
+  className?: string;
+  isSelected?: boolean;
+  onSelect?: () => void;
+}> = ({ name, className, isSelected, onSelect }) => (
+  <div
+    className={cn(
+      "flex flex-1 items-center py-1 text-sm font-medium hover:bg-muted rounded px-2 cursor-pointer",
+      isSelected && "bg-muted",
+      className
+    )}
+    onClick={onSelect}
+  >
     <FolderIcon className="h-4 w-4 text-muted-foreground mr-2" />
     <span>{name}</span>
   </div>
@@ -145,16 +183,16 @@ const FolderContent: React.FC<{ children?: React.ReactNode; className?: string }
   </AccordionPrimitive.Content>
 );
 
-export const Folder: React.FC<FolderProps> = ({ name, children, className }) => {
+export const Folder: React.FC<FolderProps> = ({ name, children, className, isSelected, onSelect }) => {
   const hasFiles = React.Children.count(children) > 0;
 
   return hasFiles ? (
     <AccordionPrimitive.Item value={name} className={className}>
-      <FolderTriggerExpandable name={name} />
+      <FolderTriggerExpandable name={name} isSelected={isSelected} onSelect={onSelect} />
       <FolderContent>{children}</FolderContent>
     </AccordionPrimitive.Item>
   ) : (
-    <FolderTriggerEmpty name={name} className={className} />
+    <FolderTriggerEmpty name={name} className={className} isSelected={isSelected} onSelect={onSelect} />
   );
 };
 

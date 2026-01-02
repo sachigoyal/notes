@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { EditorContent, EditorContext, useEditor } from "@tiptap/react"
 
 // --- Tiptap Core Extensions ---
@@ -63,12 +63,12 @@ import { LinkIcon } from "@/components/tiptap-icons/link-icon"
 import { useIsBreakpoint } from "@/hooks/use-is-breakpoint"
 import { useWindowSize } from "@/hooks/use-window-size"
 import { useCursorVisibility } from "@/hooks/use-cursor-visibility"
-
-// --- Components ---
-import { ThemeToggle } from "@/components/tiptap-templates/simple/theme-toggle"
+import { useAutoSave } from "@/hooks/use-auto-save"
 
 // --- Lib ---
 import { handleImageUpload, MAX_FILE_SIZE } from "@/lib/tiptap-utils"
+import { useSelection } from "@/lib/selection-context"
+import { updateNoteContent } from "@/action/action"
 
 // --- Styles ---
 import "@/components/tiptap-templates/simple/simple-editor.scss"
@@ -180,10 +180,17 @@ const MobileToolbarContent = ({
 export function SimpleEditor() {
   const isMobile = useIsBreakpoint()
   const { height } = useWindowSize()
+  const { selection } = useSelection()
   const [mobileView, setMobileView] = useState<"main" | "highlighter" | "link">(
     "main"
   )
+  const [content, setContent] = useState("")
   const toolbarRef = useRef<HTMLDivElement>(null)
+  const lastLoadedIdRef = useRef<string | null>(null)
+
+  // Get the current file info
+  const fileId = selection?.type === "file" ? selection.node.id : null
+  const initialContent = selection?.type === "file" ? selection.node.content : null
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -223,6 +230,41 @@ export function SimpleEditor() {
       }),
     ],
     content: "",
+    onUpdate: ({ editor }) => {
+      setContent(editor.getHTML())
+    },
+  })
+
+  // Load content when file selection changes
+  useEffect(() => {
+    if (!editor || !fileId) return
+
+    // Only load if this is a new file
+    if (lastLoadedIdRef.current === fileId) return
+    lastLoadedIdRef.current = fileId
+
+    const contentToLoad = initialContent ?? ""
+    editor.commands.setContent(contentToLoad)
+    setContent(contentToLoad)
+
+    // Focus at the end of the content
+    requestAnimationFrame(() => {
+      editor.commands.focus("end")
+    })
+  }, [editor, fileId, initialContent])
+
+  // Auto-save handler
+  const handleSave = useCallback(
+    async (contentToSave: string) => {
+      if (!fileId) return
+      await updateNoteContent(fileId, contentToSave)
+    },
+    [fileId]
+  )
+
+  // Use auto-save hook
+  useAutoSave(content, handleSave, {
+    delay: 1000,
   })
 
   const rect = useCursorVisibility({

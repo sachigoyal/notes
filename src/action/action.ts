@@ -5,7 +5,7 @@ import { nodes } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { slugify } from "@/lib/utils";
 
 export const createnote = async (title: string, content: string, parentId: string | null) => {
@@ -64,4 +64,72 @@ export const updatenote = async (
       content,
     })
     .where(eq(nodes.id, id));
+};
+
+export const updateNoteContent = async (id: string, content: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  await db
+    .update(nodes)
+    .set({ content })
+    .where(eq(nodes.id, id));
+};
+
+const updateFolder = async (id: string, name: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  await db
+    .update(nodes)
+    .set({
+      name,
+    })
+    .where(eq(nodes.id, id));
+};
+
+export const deletenote = async (id: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  await db.delete(nodes).where(and(eq(nodes.id, id), eq(nodes.type, "note")));
+};
+
+export const deletefolder = async (id: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  await db.delete(nodes).where(and(eq(nodes.id, id), eq(nodes.type, "folder")));
+};
+
+export const getNodes = async () => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  return await db.select().from(nodes).where(eq(nodes.userId, session.user.id));
 };

@@ -1,21 +1,22 @@
-"use client"
+"use client";
 
 import { useState } from "react";
-import {
-  Sidebar,
-  SidebarContent,
-} from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import { FileActions } from "@/components/sidebar/actions";
 import { Files, NewFileInput, NewFolderInput } from "@/components/ui/files";
 import { Note } from "./tree/Notes";
 import { NoteFolder } from "./tree/NoteFolder";
 import { createnote, createfolder } from "@/action/action";
+import type { TreeNode } from "@/lib/file-tree";
 
-export default function AppSidebar() {
+interface AppSidebarProps {
+  initialTree: TreeNode[];
+}
+
+export default function AppSidebar({ initialTree }: AppSidebarProps) {
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-  const [notes, setNotes] = useState<string[]>([]);
-  const [folders, setFolders] = useState<string[]>([]);
+  const [tree, setTree] = useState<TreeNode[]>(initialTree);
 
   const handleCreateFileClick = () => {
     setIsCreatingFile(true);
@@ -28,17 +29,32 @@ export default function AppSidebar() {
   };
 
   const handleFileSubmit = async (name: string) => {
-    console.log("Creating note:", name);
-    setNotes((prev) => [...prev, name]);
-    setIsCreatingFile(false);
     await createnote(name, "", null);
+    // Add the new note to the tree optimistically
+    const newNote: TreeNode = {
+      id: crypto.randomUUID(),
+      type: "note",
+      title: name,
+      slug: null,
+      content: null,
+      parentId: null,
+    };
+    setTree((prev) => [...prev, newNote]);
+    setIsCreatingFile(false);
   };
 
   const handleFolderSubmit = async (name: string) => {
-    console.log("Creating folder:", name);
-    setFolders((prev) => [...prev, name]);
-    setIsCreatingFolder(false);
     await createfolder(name, null);
+    // Add the new folder to the tree optimistically
+    const newFolder: TreeNode = {
+      id: crypto.randomUUID(),
+      type: "folder",
+      name: name,
+      parentId: null,
+      children: [],
+    };
+    setTree((prev) => [...prev, newFolder]);
+    setIsCreatingFolder(false);
   };
 
   const handleFileCancel = () => {
@@ -54,36 +70,32 @@ export default function AppSidebar() {
       <SidebarContent>
         <div className="flex items-center w-full justify-between py-1.5 px-3 border-b">
           <span className="text-sm">Notes</span>
-          <FileActions onCreateFileClick={handleCreateFileClick} onCreateFolderClick={handleCreateFolderClick} />
+          <FileActions
+            onCreateFileClick={handleCreateFileClick}
+            onCreateFolderClick={handleCreateFolderClick}
+          />
         </div>
         <div className="p-1">
           <Files defaultValue="src/notes">
             {isCreatingFile && (
-              <NewFileInput onSubmit={handleFileSubmit} onCancel={handleFileCancel} />
+              <NewFileInput
+                onSubmit={handleFileSubmit}
+                onCancel={handleFileCancel}
+              />
             )}
             {isCreatingFolder && (
-              <NewFolderInput onSubmit={handleFolderSubmit} onCancel={handleFolderCancel} />
+              <NewFolderInput
+                onSubmit={handleFolderSubmit}
+                onCancel={handleFolderCancel}
+              />
             )}
-            {notes.map((name) => (
-              <Note key={name} name={name} />
-            ))}
-            {folders.map((name) => (
-              <NoteFolder key={name} name={name}>
-                {null}
-              </NoteFolder>
-            ))}
-            <Note name="Meeting Notes.md" />
-            <Note name="Project Ideas.md" />
-            <Note name="Todo List.md" />
-            <Note name="Research.md" />
-            <NoteFolder name="Work">
-              <Note name="Quarterly Goals.md" />
-              <Note name="Team Updates.md" />
-            </NoteFolder>
-            <NoteFolder name="Personal">
-              <Note name="Book Recommendations.md" />
-              <Note name="Travel Plans.md" />
-            </NoteFolder>
+            {tree.map((node) =>
+              node.type === "folder" ? (
+                <NoteFolder key={node.id} node={node} />
+              ) : (
+                <Note key={node.id} node={node} />
+              )
+            )}
           </Files>
         </div>
       </SidebarContent>
