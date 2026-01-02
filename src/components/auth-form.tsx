@@ -42,14 +42,6 @@ export default function AuthForm({ mode }: AuthFormProps) {
 			{/* Social buttons */}
 			<div className="space-y-3">
 				<button
-					onClick={() => handleSocialSignUp("google")}
-					className="w-full h-11 flex items-center justify-center gap-3 border border-border rounded-lg bg-transparent hover:bg-muted/50 transition-colors text-sm font-normal cursor-pointer"
-				>
-					<GoogleIcon className="w-4 h-4" />
-					<span>Continue with Google</span>
-				</button>
-
-				<button
 					onClick={() => handleSocialSignUp("github")}
 					className="w-full h-11 flex items-center justify-center gap-3 border border-border rounded-lg bg-transparent hover:bg-muted/50 transition-colors text-sm font-normal cursor-pointer"
 				>
