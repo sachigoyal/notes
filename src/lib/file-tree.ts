@@ -69,9 +69,18 @@ export async function buildFileTree(
     }
   }
 
-  // Sort nodes by createdAt timestamp (newest first)
+  // Sort nodes alphabetically: folders first, then files, both alphabetically
   const sortNodes = (nodes: TreeNode[]): TreeNode[] => {
-    return nodes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return nodes.sort((a, b) => {
+      // Folders come before files
+      if (a.type === "folder" && b.type !== "folder") return -1;
+      if (a.type !== "folder" && b.type === "folder") return 1;
+      
+      // Both same type: sort alphabetically
+      const nameA = a.type === "folder" ? a.name.toLowerCase() : a.title.toLowerCase();
+      const nameB = b.type === "folder" ? b.name.toLowerCase() : b.title.toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
   };
 
   // Recursively sort all children

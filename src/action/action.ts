@@ -17,14 +17,18 @@ export const createnote = async (title: string, content: string, parentId: strin
     redirect("/login");
   }
 
-  await db.insert(nodes).values({
+  const slug = slugify(title);
+
+  const result = await db.insert(nodes).values({
     type: "note",
     title,
-    slug: slugify(title),
+    slug,
     content,
     userId: session.user.id,
     parentId,
-  });
+  }).returning({ id: nodes.id, slug: nodes.slug });
+
+  return { id: result[0].id, slug: result[0].slug };
 };
 
 export const createfolder = async (name: string, parentId: string | null) => {
@@ -81,6 +85,25 @@ export const updateNoteContent = async (id: string, content: string) => {
     .where(eq(nodes.id, id));
 };
 
+export const updateNoteTitle = async (id: string, title: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const newSlug = slugify(title);
+
+  await db
+    .update(nodes)
+    .set({ title, slug: newSlug })
+    .where(and(eq(nodes.id, id), eq(nodes.type, "note")));
+
+  return { slug: newSlug };
+};
+
 export const updateFolder = async (id: string, name: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -132,4 +155,52 @@ export const getNodes = async () => {
   }
 
   return await db.select().from(nodes).where(eq(nodes.userId, session.user.id));
+};
+
+export const getNoteBySlug = async (slug: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const result = await db
+    .select()
+    .from(nodes)
+    .where(
+      and(
+        eq(nodes.userId, session.user.id),
+        eq(nodes.slug, slug),
+        eq(nodes.type, "note")
+      )
+    )
+    .limit(1);
+
+  return result[0] ?? null;
+};
+
+export const getNoteById = async (id: string) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const result = await db
+    .select()
+    .from(nodes)
+    .where(
+      and(
+        eq(nodes.userId, session.user.id),
+        eq(nodes.id, id),
+        eq(nodes.type, "note")
+      )
+    )
+    .limit(1);
+
+  return result[0] ?? null;
 };

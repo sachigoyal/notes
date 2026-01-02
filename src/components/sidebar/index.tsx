@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import { FileActions } from "@/components/sidebar/actions";
 import { FilesProvider, NewFileInput, NewFolderInput, type CreatingState } from "@/components/ui/files";
 import { Note } from "./tree/Notes";
 import { NoteFolder } from "./tree/NoteFolder";
-import { createnote, createfolder, updateFolder, deletefolder } from "@/action/action";
+import { createnote, createfolder, updateFolder, deletefolder, deletenote, updateNoteTitle } from "@/action/action";
 import type { TreeNode, FolderNode, FileNode } from "@/lib/file-tree";
 import { useSelection } from "@/lib/selection-context";
+import { slugify } from "@/lib/utils";
 
 interface AppSidebarProps {
   initialTree: TreeNode[];
@@ -17,7 +19,8 @@ interface AppSidebarProps {
 export default function AppSidebar({ initialTree }: AppSidebarProps) {
   const [creatingState, setCreatingState] = useState<CreatingState>(null);
   const [tree, setTree] = useState<TreeNode[]>(initialTree);
-  const { selection } = useSelection();
+  const { selection, selectFile, selectFolder, clearSelection } = useSelection();
+  const router = useRouter();
 
   // Helper to add a node to the tree at the right location
   const addNodeToTree = useCallback((nodes: TreeNode[], newNode: TreeNode, parentId: string | null): TreeNode[] => {
@@ -58,6 +61,22 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
     });
   }, []);
 
+  // Helper to update any node in the tree by ID
+  const updateNodeInTree = useCallback((nodes: TreeNode[], nodeId: string, updates: Partial<FileNode>): TreeNode[] => {
+    return nodes.map(node => {
+      if (node.id === nodeId && node.type === "note") {
+        return { ...node, ...updates } as FileNode;
+      }
+      if (node.type === "folder") {
+        return {
+          ...node,
+          children: updateNodeInTree(node.children, nodeId, updates),
+        };
+      }
+      return node;
+    });
+  }, []);
+
   // Helper to remove a folder from the tree
   const removeFolderFromTree = useCallback((nodes: TreeNode[], folderId: string): TreeNode[] => {
     return nodes
@@ -71,6 +90,37 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
         }
         return node;
       });
+  }, []);
+
+  // Helper to remove a file from the tree
+  const removeFileFromTree = useCallback((nodes: TreeNode[], fileId: string): TreeNode[] => {
+    return nodes
+      .filter(node => !(node.type === "note" && node.id === fileId))
+      .map(node => {
+        if (node.type === "folder") {
+          return {
+            ...node,
+            children: removeFileFromTree(node.children, fileId),
+          };
+        }
+        return node;
+      });
+  }, []);
+
+  // Helper to update a file in the tree
+  const updateFileInTree = useCallback((nodes: TreeNode[], fileId: string, updates: Partial<FileNode>): TreeNode[] => {
+    return nodes.map(node => {
+      if (node.type === "note" && node.id === fileId) {
+        return { ...node, ...updates } as FileNode;
+      }
+      if (node.type === "folder") {
+        return {
+          ...node,
+          children: updateFileInTree(node.children, fileId, updates),
+        };
+      }
+      return node;
+    });
   }, []);
 
   // Determine the target parent for new items based on selection
@@ -100,12 +150,16 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
   };
 
   const handleCreateFile = async (name: string, parentId: string | null) => {
+    // Generate slug client-side for optimistic update
+    const tempSlug = slugify(name);
+    const tempId = crypto.randomUUID();
+    
     // Optimistic update
     const newNote: FileNode = {
-      id: crypto.randomUUID(),
+      id: tempId,
       type: "note",
       title: name,
-      slug: null,
+      slug: tempSlug,
       content: null,
       parentId,
       createdAt: new Date(),
@@ -113,8 +167,28 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
     setTree(prev => addNodeToTree(prev, newNote, parentId));
     setCreatingState(null);
     
-    // Server action
-    await createnote(name, "", parentId);
+    // Auto-select the new file
+    selectFile(newNote);
+    
+    // Server action - returns real ID and slug
+    const result = await createnote(name, "", parentId);
+    
+    // Update tree with real ID and slug
+    const updatedNote: FileNode = {
+      ...newNote,
+      id: result.id,
+      slug: result.slug,
+    };
+    setTree(prev => updateNodeInTree(prev, tempId, { 
+      id: result.id, 
+      slug: result.slug 
+    }));
+    
+    // Update selection with real data
+    selectFile(updatedNote);
+    
+    // Navigate to the new note
+    router.push(`/notes/${result.slug}`);
   };
 
   const handleCreateFolder = async (name: string, parentId: string | null) => {
@@ -130,6 +204,9 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
     setTree(prev => addNodeToTree(prev, newFolder, parentId));
     setCreatingState(null);
     
+    // Auto-select the new folder
+    selectFolder(newFolder);
+    
     // Server action
     await createfolder(name, parentId);
   };
@@ -143,11 +220,40 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
   };
 
   const handleDeleteFolder = async (id: string) => {
+    // Clear selection if deleting the selected folder
+    if (selection?.type === "folder" && selection.node.id === id) {
+      clearSelection();
+    }
+    
     // Optimistic update
     setTree(prev => removeFolderFromTree(prev, id));
     
     // Server action
     await deletefolder(id);
+  };
+
+  const handleRenameFile = async (id: string, newName: string) => {
+    const newSlug = slugify(newName);
+    
+    // Optimistic update
+    setTree(prev => updateFileInTree(prev, id, { title: newName, slug: newSlug }));
+    
+    // Server action
+    await updateNoteTitle(id, newName);
+  };
+
+  const handleDeleteFile = async (id: string) => {
+    // Clear selection if deleting the selected file
+    if (selection?.type === "file" && selection.node.id === id) {
+      clearSelection();
+      router.push("/");
+    }
+    
+    // Optimistic update
+    setTree(prev => removeFileFromTree(prev, id));
+    
+    // Server action
+    await deletenote(id);
   };
 
   const handleCancel = () => {
@@ -175,6 +281,8 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
             onCreateFolder={handleCreateFolder}
             onRenameFolder={handleRenameFolder}
             onDeleteFolder={handleDeleteFolder}
+            onRenameFile={handleRenameFile}
+            onDeleteFile={handleDeleteFile}
             creatingState={creatingState}
             setCreatingState={setCreatingState}
           >

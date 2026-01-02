@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, createContext, useContext, useCallback } from "react";
 import * as AccordionPrimitive from "@radix-ui/react-accordion"
+import Link from "next/link";
 import { FolderIcon, FolderOpenIcon, FileIcon, ChevronRight, MoreHorizontal, FilePlus, FolderPlus, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -33,6 +34,8 @@ type FilesContextValue = {
   onCreateFolder: (name: string, parentId: string | null) => Promise<void>;
   onRenameFolder: (id: string, newName: string) => Promise<void>;
   onDeleteFolder: (id: string) => Promise<void>;
+  onRenameFile: (id: string, newName: string) => Promise<void>;
+  onDeleteFile: (id: string) => Promise<void>;
 };
 
 const FilesContext = createContext<FilesContextValue | null>(null);
@@ -47,6 +50,7 @@ export function useFilesContext() {
 
 export type FileProps = {
   name: string;
+  href?: string;
   className?: string;
   isSelected?: boolean;
   onClick?: () => void;
@@ -69,19 +73,159 @@ export type FolderWithActionsProps = {
   onSelect?: () => void;
 };
 
-export const File: React.FC<FileProps> = ({ name, className, isSelected, onClick }) => (
-  <div
-    className={cn(
-      "flex items-center space-x-2 py-1 text-sm hover:bg-muted rounded px-2 cursor-pointer",
-      isSelected && "bg-muted",
-      className
-    )}
-    onClick={onClick}
-  >
-    <FileIcon className="h-4 w-4 text-muted-foreground" />
-    <span>{name}</span>
-  </div>
-);
+export type FileWithActionsProps = {
+  id: string;
+  name: string;
+  href?: string;
+  className?: string;
+  isSelected?: boolean;
+  onClick?: () => void;
+};
+
+export const File: React.FC<FileProps> = ({ name, href, className, isSelected, onClick }) => {
+  const baseClassName = cn(
+    "flex items-center space-x-2 py-1 text-sm hover:bg-muted rounded px-2 cursor-pointer",
+    isSelected && "bg-muted",
+    className
+  );
+
+  const content = (
+    <>
+      <FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+      <span>{name}</span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className={baseClassName} onClick={onClick}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={baseClassName} onClick={onClick}>
+      {content}
+    </div>
+  );
+};
+
+// File with dropdown actions
+export const FileWithActions: React.FC<FileWithActionsProps> = ({
+  id,
+  name,
+  href,
+  className,
+  isSelected,
+  onClick,
+}) => {
+  const { onRenameFile, onDeleteFile } = useFilesContext();
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const handleRename = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsRenaming(true);
+  }, []);
+
+  const handleDelete = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteDialog(true);
+  }, []);
+
+  const handleRenameSubmit = async (newName: string) => {
+    await onRenameFile(id, newName);
+    setIsRenaming(false);
+  };
+
+  const handleDeleteConfirm = async () => {
+    await onDeleteFile(id);
+    setShowDeleteDialog(false);
+  };
+
+  if (isRenaming) {
+    return (
+      <RenameInput
+        initialValue={name}
+        onSubmit={handleRenameSubmit}
+        onCancel={() => setIsRenaming(false)}
+        icon={<FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />}
+        className={className}
+      />
+    );
+  }
+
+  const baseClassName = cn(
+    "flex items-center py-1 text-sm hover:bg-muted rounded px-2 cursor-pointer group/file",
+    isSelected && "bg-muted",
+    className
+  );
+
+  const content = (
+    <>
+      <FileIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+      <span className="ml-2 flex-1">{name}</span>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-5 w-5 opacity-0 group-hover/file:opacity-100 transition-opacity shrink-0"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <MoreHorizontal className="h-3.5 w-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" side="right" className="min-w-40">
+          <DropdownMenuItem onClick={handleRename}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Rename
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleDelete} variant="destructive">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
+
+  return (
+    <>
+      {href ? (
+        <Link href={href} className={baseClassName} onClick={onClick}>
+          {content}
+        </Link>
+      ) : (
+        <div className={baseClassName} onClick={onClick}>
+          {content}
+        </div>
+      )}
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete file</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete &quot;{name}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+};
 
 export type NewFileInputProps = {
   onSubmit: (name: string) => void;
@@ -497,6 +641,8 @@ type FilesProviderProps = {
   onCreateFolder: (name: string, parentId: string | null) => Promise<void>;
   onRenameFolder: (id: string, newName: string) => Promise<void>;
   onDeleteFolder: (id: string) => Promise<void>;
+  onRenameFile: (id: string, newName: string) => Promise<void>;
+  onDeleteFile: (id: string) => Promise<void>;
   creatingState: CreatingState;
   setCreatingState: (state: CreatingState) => void;
 };
@@ -509,6 +655,8 @@ export const FilesProvider: React.FC<FilesProviderProps> = ({
   onCreateFolder,
   onRenameFolder,
   onDeleteFolder,
+  onRenameFile,
+  onDeleteFile,
   creatingState,
   setCreatingState,
 }) => {
@@ -530,6 +678,8 @@ export const FilesProvider: React.FC<FilesProviderProps> = ({
         onCreateFolder,
         onRenameFolder,
         onDeleteFolder,
+        onRenameFile,
+        onDeleteFile,
       }}
     >
       <AccordionPrimitive.Root 
