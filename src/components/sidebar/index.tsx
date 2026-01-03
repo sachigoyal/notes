@@ -10,7 +10,7 @@ import { NoteFolder } from "./tree/NoteFolder";
 import { createnote, createfolder, updateFolder, deletefolder, deletenote, updateNoteTitle } from "@/action/action";
 import type { TreeNode, FolderNode, FileNode } from "@/lib/file-tree";
 import { useSelection } from "@/lib/selection-context";
-import { slugify } from "@/lib/utils";
+import { generateUniqueSlug } from "@/lib/utils";
 
 interface AppSidebarProps {
   initialTree: TreeNode[];
@@ -123,6 +123,23 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
     });
   }, []);
 
+  // Helper to collect all slugs from the tree
+  const collectSlugs = useCallback((nodes: TreeNode[]): Set<string> => {
+    const slugs = new Set<string>();
+    const traverse = (items: TreeNode[]) => {
+      for (const node of items) {
+        if (node.type === "note" && node.slug) {
+          slugs.add(node.slug);
+        }
+        if (node.type === "folder") {
+          traverse(node.children);
+        }
+      }
+    };
+    traverse(nodes);
+    return slugs;
+  }, []);
+
   // Determine the target parent for new items based on selection
   const getTargetParentId = useCallback((): string | null => {
     if (!selection) return null;
@@ -150,8 +167,9 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
   };
 
   const handleCreateFile = async (name: string, parentId: string | null) => {
-    // Generate slug client-side for optimistic update
-    const tempSlug = slugify(name);
+    // Generate unique slug client-side for optimistic update
+    const existingSlugs = collectSlugs(tree);
+    const tempSlug = generateUniqueSlug(name, existingSlugs);
     const tempId = crypto.randomUUID();
     
     // Optimistic update
@@ -171,7 +189,7 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
     selectFile(newNote);
     
     // Server action - returns real ID and slug
-    const result = await createnote(name, "", parentId);
+    const result = await createnote(name, tempSlug, "", parentId);
     
     // Update tree with real ID and slug
     const updatedNote: FileNode = {
@@ -233,13 +251,28 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
   };
 
   const handleRenameFile = async (id: string, newName: string) => {
-    const newSlug = slugify(newName);
+    // Find the current file's slug to exclude it from uniqueness check
+    const findSlugById = (nodes: TreeNode[]): string | undefined => {
+      for (const node of nodes) {
+        if (node.type === "note" && node.id === id) return node.slug;
+        if (node.type === "folder") {
+          const found = findSlugById(node.children);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
+    const currentSlug = findSlugById(tree);
+    
+    // Generate unique slug, excluding the current slug
+    const existingSlugs = collectSlugs(tree);
+    const newSlug = generateUniqueSlug(newName, existingSlugs, currentSlug);
     
     // Optimistic update
     setTree(prev => updateFileInTree(prev, id, { title: newName, slug: newSlug }));
     
     // Server action
-    await updateNoteTitle(id, newName);
+    await updateNoteTitle(id, newName, newSlug);
   };
 
   const handleDeleteFile = async (id: string) => {

@@ -6,9 +6,8 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
-import { slugify } from "@/lib/utils";
 
-export const createnote = async (title: string, content: string, parentId: string | null) => {
+export const createnote = async (title: string, slug: string, content: string, parentId: string | null) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -16,8 +15,6 @@ export const createnote = async (title: string, content: string, parentId: strin
   if (!session?.user) {
     redirect("/login");
   }
-
-  const slug = slugify(title);
 
   const result = await db.insert(nodes).values({
     type: "note",
@@ -85,7 +82,7 @@ export const updateNoteContent = async (id: string, content: string) => {
     .where(eq(nodes.id, id));
 };
 
-export const updateNoteTitle = async (id: string, title: string) => {
+export const updateNoteTitle = async (id: string, title: string, slug: string) => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -94,14 +91,12 @@ export const updateNoteTitle = async (id: string, title: string) => {
     redirect("/login");
   }
 
-  const newSlug = slugify(title);
-
   await db
     .update(nodes)
-    .set({ title, slug: newSlug })
+    .set({ title, slug })
     .where(and(eq(nodes.id, id), eq(nodes.type, "note")));
 
-  return { slug: newSlug };
+  return { slug };
 };
 
 export const updateFolder = async (id: string, name: string) => {
