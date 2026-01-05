@@ -22,7 +22,7 @@ export default async function NotePage({ params }: Props) {
   }
 
   return (
-    <div className="w-full h-full flex justify-center">
+    <div className="w-full h-full">
       <NoteEditor 
         id={note.id}
         title={note.title ?? "Untitled"}
