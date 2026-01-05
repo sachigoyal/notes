@@ -7,20 +7,20 @@
   max-height: 320px;
   overflow-y: auto;
   min-width: 240px;
-  
+
   // Custom scrollbar
   &::-webkit-scrollbar {
     width: 6px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: hsl(var(--muted-foreground) / 0.3);
     border-radius: 3px;
-    
+
     &:hover {
       background: hsl(var(--muted-foreground) / 0.5);
     }
@@ -40,21 +40,38 @@
   gap: 12px;
   width: 100%;
   padding: 8px 12px;
-  border: none;
+  border: 2px solid transparent;
   background: transparent;
   cursor: pointer;
   border-radius: 6px;
   text-align: left;
-  transition: background-color 0.15s ease;
-  
-  &:hover,
-  &.is-selected {
-    background: hsl(var(--accent));
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: hsl(var(--accent) / 0.5);
   }
-  
+
+  // Selected state - much more prominent
   &.is-selected {
+    background: hsl(var(--primary) / 0.15);
+    border-color: hsl(var(--primary));
+
+    .slash-command-item-icon {
+      background: hsl(var(--primary));
+      border-color: hsl(var(--primary));
+
+      .slash-command-icon {
+        color: hsl(var(--primary-foreground));
+      }
+    }
+
     .slash-command-item-title {
-      color: hsl(var(--accent-foreground));
+      color: hsl(var(--primary));
+      font-weight: 600;
+    }
+
+    .slash-command-item-description {
+      color: hsl(var(--foreground) / 0.8);
     }
   }
 }
@@ -69,11 +86,13 @@
   border-radius: 6px;
   flex-shrink: 0;
   border: 1px solid hsl(var(--border));
-  
+  transition: all 0.15s ease;
+
   .slash-command-icon {
     width: 18px;
     height: 18px;
     color: hsl(var(--foreground));
+    transition: color 0.15s ease;
   }
 }
 
@@ -89,6 +108,7 @@
   font-weight: 500;
   color: hsl(var(--foreground));
   line-height: 1.3;
+  transition: all 0.15s ease;
 }
 
 .slash-command-item-description {
@@ -98,4 +118,5 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 0.15s ease;
 }
