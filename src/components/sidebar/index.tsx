@@ -254,7 +254,7 @@ export default function AppSidebar({ initialTree }: AppSidebarProps) {
     // Find the current file's slug to exclude it from uniqueness check
     const findSlugById = (nodes: TreeNode[]): string | undefined => {
       for (const node of nodes) {
-        if (node.type === "note" && node.id === id) return node.slug;
+        if (node.type === "note" && node.id === id) return node.slug ?? undefined;
         if (node.type === "folder") {
           const found = findSlugById(node.children);
           if (found) return found;
