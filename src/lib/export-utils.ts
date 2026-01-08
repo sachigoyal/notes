@@ -13,7 +13,6 @@ export interface ExportTreeNode {
   children: ExportTreeNode[];
 }
 
-// Convert HTML to Markdown
 export function htmlToMarkdown(html: string | null): string {
   if (!html) return "";
   
@@ -23,7 +22,6 @@ export function htmlToMarkdown(html: string | null): string {
     bulletListMarker: "-",
   });
   
-  // Add custom rules for better formatting
   turndownService.addRule("taskList", {
     filter: (node) => {
       return (
@@ -41,12 +39,10 @@ export function htmlToMarkdown(html: string | null): string {
   return turndownService.turndown(html);
 }
 
-// Build tree structure from flat nodes
 export function buildExportTree(flatNodes: typeof nodes.$inferSelect[]): ExportTreeNode[] {
   const nodeMap = new Map<string, ExportTreeNode>();
   const rootNodes: ExportTreeNode[] = [];
   
-  // First pass: create all nodes
   for (const node of flatNodes) {
     nodeMap.set(node.id, {
       id: node.id,
@@ -60,7 +56,6 @@ export function buildExportTree(flatNodes: typeof nodes.$inferSelect[]): ExportT
     });
   }
   
-  // Second pass: build the tree
   for (const node of flatNodes) {
     const treeNode = nodeMap.get(node.id)!;
     if (node.parentId && nodeMap.has(node.parentId)) {
@@ -73,7 +68,6 @@ export function buildExportTree(flatNodes: typeof nodes.$inferSelect[]): ExportT
   return rootNodes;
 }
 
-// Sanitize filename to be filesystem-safe
 export function sanitizeFilename(name: string): string {
   return name
     .replace(/[<>:"/\\|?*]/g, "_")
@@ -81,7 +75,6 @@ export function sanitizeFilename(name: string): string {
     .slice(0, 100);
 }
 
-// Recursively add nodes to zip
 export function addNodesToZip(zip: JSZip, nodes: ExportTreeNode[], path: string = "") {
   for (const node of nodes) {
     if (node.type === "folder") {
