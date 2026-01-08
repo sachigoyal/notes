@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FilePlusCorner, FolderPlus, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { exportNotes } from "@/action/export-action";
 
 type FileActionsProps = {
   onCreateFileClick: () => void;
@@ -18,17 +19,16 @@ export function FileActions({ onCreateFileClick, onCreateFolderClick }: FileActi
       setIsExporting(true);
       toast.info("Preparing your export...");
 
-      const response = await fetch("/api/export");
+      const base64Data = await exportNotes();
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to export");
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: "application/zip" });
 
-      // Get the blob from response
-      const blob = await response.blob();
-
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -36,7 +36,6 @@ export function FileActions({ onCreateFileClick, onCreateFolderClick }: FileActi
       document.body.appendChild(a);
       a.click();
 
-      // Cleanup
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
