@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { FilePlusCorner, FolderPlus, Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -55,6 +56,16 @@ export function FileActions({ onCreateFileClick, onCreateFolderClick }: FileActi
       </Button>
       <Button variant="ghost" size="icon-sm" className="cursor-pointer" onClick={onCreateFolderClick}>
         <FolderPlus />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="cursor-pointer"
+        onClick={handleExport}
+        disabled={isExporting}
+        title="Export all notes as ZIP"
+      >
+        {isExporting ? <Loader2 className="animate-spin" /> : <Download />}
       </Button>
       <Button
         variant="ghost"
