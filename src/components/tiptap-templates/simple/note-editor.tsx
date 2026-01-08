@@ -14,6 +14,9 @@ import { Subscript } from "@tiptap/extension-subscript"
 import { Superscript } from "@tiptap/extension-superscript"
 import { Selection } from "@tiptap/extensions"
 
+// --- Slash Command Extension ---
+import { SlashCommand, slashCommandSuggestion } from "@/components/tiptap-extension/slash-command"
+
 // --- UI Primitives ---
 import { Button } from "@/components/tiptap-ui-primitive/button"
 import { Spacer } from "@/components/tiptap-ui-primitive/spacer"
@@ -228,6 +231,9 @@ export function NoteEditor({ id, content: initialContent }: NoteEditorProps) {
         upload: handleImageUpload,
         onError: (error) => console.error("Upload failed:", error),
       }),
+      SlashCommand.configure({
+        suggestion: slashCommandSuggestion,
+      }),
     ],
     content: initialContent,
     onUpdate: ({ editor }) => {
@@ -278,8 +284,8 @@ export function NoteEditor({ id, content: initialContent }: NoteEditorProps) {
           style={{
             ...(isMobile
               ? {
-                  bottom: `calc(100% - ${height - rect.y}px)`,
-                }
+                bottom: `calc(100% - ${height - rect.y}px)`,
+              }
               : {}),
           }}
           className="h-[45px]"

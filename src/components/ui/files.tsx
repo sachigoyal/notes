@@ -330,12 +330,12 @@ export type RenameInputProps = {
   className?: string;
 };
 
-export const RenameInput: React.FC<RenameInputProps> = ({ 
-  initialValue, 
-  onSubmit, 
-  onCancel, 
+export const RenameInput: React.FC<RenameInputProps> = ({
+  initialValue,
+  onSubmit,
+  onCancel,
   icon,
-  className 
+  className
 }) => {
   const [value, setValue] = useState(initialValue);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -386,27 +386,29 @@ const FolderTriggerExpandable: React.FC<{
   rightSlot?: React.ReactNode;
 }> = ({ name, className, isSelected, onSelect, rightSlot }) => (
   <AccordionPrimitive.Header className="flex">
-    <AccordionPrimitive.Trigger
-      className={cn(
-        "flex flex-1 items-center py-1 text-sm font-medium transition-all hover:no-underline hover:bg-muted rounded px-2 group/folder",
-        isSelected && "bg-muted",
-        className
-      )}
-      onClick={(e) => {
-        if (onSelect) {
-          e.stopPropagation();
-          onSelect();
-        }
-      }}
-    >
-      <div className="relative flex items-center flex-1">
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]/folder:rotate-90 mr-1" />
-        <FolderIcon className="h-4 w-4 text-muted-foreground hidden group-data-[state=closed]/folder:block" />
-        <FolderOpenIcon className="h-4 w-4 text-muted-foreground group-data-[state=open]/folder:block hidden" />
-        <span className="ml-2">{name}</span>
-      </div>
-      {rightSlot}
-    </AccordionPrimitive.Trigger>
+    <div className={cn(
+      "flex flex-1 items-center text-sm font-medium transition-all hover:bg-muted rounded group/folder",
+      isSelected && "bg-muted",
+      className
+    )}>
+      <AccordionPrimitive.Trigger
+        className="flex flex-1 items-center py-1 px-2 hover:no-underline"
+        onClick={(e) => {
+          if (onSelect) {
+            e.stopPropagation();
+            onSelect();
+          }
+        }}
+      >
+        <div className="relative flex items-center flex-1">
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]/folder:rotate-90 mr-1" />
+          <FolderIcon className="h-4 w-4 text-muted-foreground hidden group-data-[state=closed]/folder:block" />
+          <FolderOpenIcon className="h-4 w-4 text-muted-foreground group-data-[state=open]/folder:block hidden" />
+          <span className="ml-2">{name}</span>
+        </div>
+      </AccordionPrimitive.Trigger>
+      {rightSlot && <div className="pr-2">{rightSlot}</div>}
+    </div>
   </AccordionPrimitive.Header>
 );
 
@@ -453,23 +455,23 @@ export const Folder: React.FC<FolderProps> = ({ name, children, className, isSel
 };
 
 // Folder with dropdown actions
-export const FolderWithActions: React.FC<FolderWithActionsProps> = ({ 
-  id, 
-  name, 
-  children, 
-  className, 
-  isSelected, 
-  onSelect 
+export const FolderWithActions: React.FC<FolderWithActionsProps> = ({
+  id,
+  name,
+  children,
+  className,
+  isSelected,
+  onSelect
 }) => {
-  const { 
-    creatingState, 
-    setCreatingState, 
-    onCreateFile, 
-    onCreateFolder, 
-    onRenameFolder, 
-    onDeleteFolder 
+  const {
+    creatingState,
+    setCreatingState,
+    onCreateFile,
+    onCreateFolder,
+    onRenameFolder,
+    onDeleteFolder
   } = useFilesContext();
-  
+
   const [isRenaming, setIsRenaming] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -591,19 +593,19 @@ export const FolderWithActions: React.FC<FolderWithActionsProps> = ({
     <>
       {hasContent ? (
         <AccordionPrimitive.Item value={id} className={className}>
-          <FolderTriggerExpandable 
-            name={name} 
-            isSelected={isSelected} 
-            onSelect={onSelect} 
+          <FolderTriggerExpandable
+            name={name}
+            isSelected={isSelected}
+            onSelect={onSelect}
             rightSlot={dropdownButton}
           />
           <FolderContent>{nestedContent}</FolderContent>
         </AccordionPrimitive.Item>
       ) : (
-        <FolderTriggerEmpty 
-          name={name} 
-          className={className} 
-          isSelected={isSelected} 
+        <FolderTriggerEmpty
+          name={name}
+          className={className}
+          isSelected={isSelected}
           onSelect={onSelect}
           rightSlot={dropdownButton}
         />
@@ -682,9 +684,9 @@ export const FilesProvider: React.FC<FilesProviderProps> = ({
         onDeleteFile,
       }}
     >
-      <AccordionPrimitive.Root 
-        type="multiple" 
-        className={cn("w-full", className)} 
+      <AccordionPrimitive.Root
+        type="multiple"
+        className={cn("w-full", className)}
         value={openFolders}
         onValueChange={setOpenFolders}
       >
@@ -698,9 +700,9 @@ export const Files: React.FC<FilesProps> = ({ children, defaultValue, className 
   const defaultOpenFolders = defaultValue ? defaultValue.split("/") : undefined;
 
   return (
-    <AccordionPrimitive.Root 
-      type="multiple" 
-      className={cn("w-full", className)} 
+    <AccordionPrimitive.Root
+      type="multiple"
+      className={cn("w-full", className)}
       defaultValue={defaultOpenFolders}
     >
       {children}
